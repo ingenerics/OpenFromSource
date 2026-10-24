@@ -129,9 +129,9 @@ class TestImportDebRegistration(unittest.TestCase):
         dest = make_test_deb.pool_abs_path(self.base, "libfoo", "1.2-3")
         self.assertTrue(os.path.isfile(dest), f"payload not at {dest}")
         with open(deb, "rb") as f:
-            self.assertEqual(
-                make_test_deb.sha256(f.read()), make_test_deb.sha256(open(dest, "rb").read())
-            )
+            src_digest = make_test_deb.sha256(f.read())
+        with open(dest, "rb") as f:
+            self.assertEqual(src_digest, make_test_deb.sha256(f.read()))
 
     def test_copied_payload_mode_matches_downloader_convention(self):
         insert_binary(self.conn, "lib1", "2.0-1")

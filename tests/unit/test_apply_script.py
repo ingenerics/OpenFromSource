@@ -200,15 +200,17 @@ class ApplyScriptUnitTest(unittest.TestCase):
         handoff_index = os.path.join(
             handoff, "dists", "trixie", "main", "binary-amd64", "Packages.gz"
         )
-        before = open(handoff_index).read()
+        with open(handoff_index) as f:
+            before = f.read()
         result = self._apply_configure(cache, self._os_release("bookworm"))
         self.assertEqual(result.returncode, 1)
         self.assertIn(
             "Release mismatch: diff is for trixie, this system is bookworm. Refusing to apply.",
             result.stderr,
         )
-        self.assertEqual(open(handoff_index).read(), before,
-                         "nothing may change on a release mismatch")
+        with open(handoff_index) as f:
+            self.assertEqual(f.read(), before,
+                             "nothing may change on a release mismatch")
 
     # -- apply_main non-root refusal ----------------------------------------
 
@@ -346,14 +348,16 @@ class ApplyScriptUnitTest(unittest.TestCase):
         self.assertEqual(first.returncode, 0, first.stderr)
         self.assertEqual(first.stdout.strip(), "1")
         dest = os.path.join(cache, "pool", "main", "a", "app", "app_1.5-1_amd64.deb")
-        content_before = open(dest).read()
+        with open(dest) as f:
+            content_before = f.read()
 
         second = self._call("copy_new_files", diff, cache)
         self.assertEqual(second.returncode, 0, second.stderr)
         self.assertEqual(second.stdout.strip(), "0",
                          "a re-apply must copy nothing (idempotent)")
-        self.assertEqual(open(dest).read(), content_before,
-                         "the already-applied file must be left unchanged")
+        with open(dest) as f:
+            self.assertEqual(f.read(), content_before,
+                             "the already-applied file must be left unchanged")
         self.assertEqual(self._leftover_temps(cache), [], "no temp files after the re-apply")
 
     def test_interrupted_apply_converges_on_rerun(self):

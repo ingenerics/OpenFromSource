@@ -99,10 +99,22 @@ class _SignedPoolHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+class _ClosableServer(http.server.ThreadingHTTPServer):
+    """ThreadingHTTPServer whose `shutdown()` also joins its serving thread and
+    closes the listening socket (avoids a GC-time ResourceWarning)."""
+
+    def shutdown(self):
+        super().shutdown()
+        thread = getattr(self, "thread", None)
+        if thread is not None:
+            thread.join()
+        self.server_close()
+
+
 def serve_signed_archive(files: dict, port: int = 0):
     """Serve `files` (URL path -> bytes) over HTTP; returns the server (call
     `shutdown()` and join `thread` when done)."""
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), _SignedPoolHandler)
+    server = _ClosableServer(("127.0.0.1", port), _SignedPoolHandler)
     server.files = files
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()

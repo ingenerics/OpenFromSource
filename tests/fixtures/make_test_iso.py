@@ -344,6 +344,24 @@ class _RateLimitHandler(_QuietPoolHandler):
         super().do_GET()
 
 
+class _ClosableServer(http.server.ThreadingHTTPServer):
+    """ThreadingHTTPServer whose `shutdown()` also joins its serving thread and
+    closes the listening socket.
+
+    Plain `HTTPServer.shutdown()` only stops the serve_forever loop; without
+    `server_close()` the listening socket lingers until GC, which the test
+    runners surface as a ResourceWarning. Helpers below start the thread and
+    attach it as `.thread` (so tests can still join it), and `shutdown()`
+    cleans up fully."""
+
+    def shutdown(self):
+        super().shutdown()
+        thread = getattr(self, "thread", None)
+        if thread is not None:
+            thread.join()
+        self.server_close()
+
+
 def serve_pool(base_dir: str, port: int = 0):
     """Start a threaded HTTP server rooted at base_dir/binary (the mirror).
 
@@ -356,7 +374,7 @@ def serve_pool(base_dir: str, port: int = 0):
     if not os.path.isdir(root):
         raise OSError(f"Pool root not found: {root} (run write_pool_files first)")
     handler = functools.partial(_QuietPoolHandler, directory=root)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+    server = _ClosableServer(("127.0.0.1", port), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     server.thread = thread
@@ -394,7 +412,7 @@ def serve_index_drop(base_dir: str, port: int = 0, drop_paths=()):
     if not os.path.isdir(root):
         raise OSError(f"Pool root not found: {root} (run write_pool_files first)")
     handler = functools.partial(_IndexDropHandler, directory=root)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+    server = _ClosableServer(("127.0.0.1", port), handler)
     server.drop_paths = list(drop_paths)
     server.drop_counts = {}
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -416,7 +434,7 @@ def serve_redirecting(base_dir: str, port: int = 0, redirects: dict | None = Non
     if not os.path.isdir(root):
         raise OSError(f"Pool root not found: {root} (run write_pool_files first)")
     handler = functools.partial(_RedirectHandler, directory=root)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+    server = _ClosableServer(("127.0.0.1", port), handler)
     server.redirects = redirects or {}
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -432,7 +450,7 @@ def serve_rate_limited(base_dir: str, port: int = 0, limit: int = 3, retry_after
     if not os.path.isdir(root):
         raise OSError(f"Pool root not found: {root} (run write_pool_files first)")
     handler = functools.partial(_RateLimitHandler, directory=root)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+    server = _ClosableServer(("127.0.0.1", port), handler)
     server.request_counts = {}
     server.rate_limit = limit
     server.retry_after = retry_after

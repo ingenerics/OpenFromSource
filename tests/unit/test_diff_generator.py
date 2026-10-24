@@ -383,10 +383,12 @@ class TestDiffGenerator(unittest.TestCase):
         insert_binary(self.conn, "app", "1.5-1")
         self.conn.commit()
         self._generate()
-        first_manifest = open(diff_manifest_path(self.cache)).read()
+        with open(diff_manifest_path(self.cache)) as f:
+            first_manifest = f.read()
         first_index = _read_packages(self.cache, "trixie", "main")
         self._generate()
-        self.assertEqual(open(diff_manifest_path(self.cache)).read(), first_manifest)
+        with open(diff_manifest_path(self.cache)) as f:
+            self.assertEqual(f.read(), first_manifest)
         self.assertEqual(_read_packages(self.cache, "trixie", "main"), first_index)
 
 

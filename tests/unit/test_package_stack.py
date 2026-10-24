@@ -118,6 +118,9 @@ class TestDebGen(unittest.TestCase):
         _run(["dpkg-deb", "-e", deb_path, control_dir])
         return dest
 
+    def tearDown(self):
+        self.tmp.cleanup()
+
     def test_control_completeness(self):
         """All required control fields present and parseable by DebFile."""
         stage = self._stage()
@@ -209,15 +212,18 @@ class TestDebGen(unittest.TestCase):
         res = self._build(stage, self._component(), os.path.join(self.root, "w6"))
         root = self._extract(res.deb_path)
         debian = os.path.join(root, "DEBIAN")
-        triggers = open(os.path.join(debian, "triggers")).read()
+        with open(os.path.join(debian, "triggers")) as f:
+            triggers = f.read()
         self.assertIn("activate-noawait ldconfig", triggers)
-        shlibs = open(os.path.join(debian, "shlibs")).read().strip()
+        with open(os.path.join(debian, "shlibs")) as f:
+            shlibs = f.read().strip()
         self.assertEqual(shlibs, "libfoo-companion 0 fixture-tool (>= 1.2.3-1)")
-        overrides = open(
+        with open(
             os.path.join(
                 root, "usr", "share", "lintian", "overrides", "fixture-tool"
             )
-        ).read()
+        ) as f:
+            overrides = f.read()
         self.assertIn("package-name-doesnt-match-sonames", overrides)
         self.assertIn("initial-upload-closes-no-bugs", overrides)
 
@@ -240,7 +246,8 @@ class TestDebGen(unittest.TestCase):
             f.write("auth required pam_permit.so\n")
         res = self._build(stage, self._component(), os.path.join(self.root, "w8"))
         root = self._extract(res.deb_path)
-        conffiles = open(os.path.join(root, "DEBIAN", "conffiles")).read().split()
+        with open(os.path.join(root, "DEBIAN", "conffiles")) as f:
+            conffiles = f.read().split()
         self.assertEqual(conffiles, ["/etc/pam.d/svc"])
 
     def test_dev_symlink_dropped(self):
@@ -327,6 +334,9 @@ class TestSrcGen(unittest.TestCase):
         with open(os.path.join(source_dir, dsc_names[0]), "r", encoding="utf-8") as f:
             return deb822.Dsc(f.read())
 
+    def tearDown(self):
+        self.tmp.cleanup()
+
     def test_complete_dsc_set(self):
         """Exactly one .dsc plus every referenced file, in the source dir."""
         res = self._build(self._component(), os.path.join(self.root, "s1"))
@@ -348,7 +358,8 @@ class TestSrcGen(unittest.TestCase):
         dsc = self._dsc(res.source_dir)
         for entry in dsc["Checksums-Sha256"]:
             path = os.path.join(res.source_dir, entry["name"])
-            digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
+            with open(path, "rb") as f:
+                digest = hashlib.sha256(f.read()).hexdigest()
             self.assertEqual(digest, entry["sha256"], entry["name"])
             self.assertEqual(int(entry["size"]), os.path.getsize(path), entry["name"])
 
@@ -393,7 +404,8 @@ class TestSrcGen(unittest.TestCase):
     def test_rules_has_required_targets(self):
         """The generated `debian/rules` provides every target policy requires."""
         res = self._build(self._component(), os.path.join(self.root, "t1"))
-        rules = open(self._tree(res, "debian", "rules")).read()
+        with open(self._tree(res, "debian", "rules")) as f:
+            rules = f.read()
         phony = next(line for line in rules.splitlines() if line.startswith(".PHONY"))
         for target in (
             "build", "build-arch", "build-indep",
@@ -404,13 +416,15 @@ class TestSrcGen(unittest.TestCase):
     def test_copyright_dep5_paragraph_separated(self):
         """The dep5 copyright separates the header from the `Files` stanza."""
         res = self._build(self._component(), os.path.join(self.root, "t2"))
-        copyright_file = open(self._tree(res, "debian", "copyright")).read()
+        with open(self._tree(res, "debian", "copyright")) as f:
+            copyright_file = f.read()
         self.assertIn("\n\nFiles: *", copyright_file)
 
     def test_changelog_numeric_offset_date(self):
         """The changelog trailer uses a numeric offset, not `GMT`."""
         res = self._build(self._component(), os.path.join(self.root, "t3"))
-        changelog = open(self._tree(res, "debian", "changelog")).read()
+        with open(self._tree(res, "debian", "changelog")) as f:
+            changelog = f.read()
         self.assertNotIn("GMT", changelog)
         self.assertRegex(changelog, r" \+0000\n")
 
@@ -421,7 +435,8 @@ class TestSrcGen(unittest.TestCase):
             os.path.join(self.root, "t4"),
             default_maintainer="OpenFromSource <noreply@example.com>",
         )
-        control = open(self._tree(res, "debian", "control")).read()
+        with open(self._tree(res, "debian", "control")) as f:
+            control = f.read()
         self.assertIn(
             "Maintainer: OpenFromSource <noreply@example.com>", control
         )
@@ -589,7 +604,8 @@ def _dir_sha256(directory: str) -> dict[str, str]:
     for name in sorted(os.listdir(directory)):
         path = os.path.join(directory, name)
         if os.path.isfile(path):
-            result[name] = hashlib.sha256(open(path, "rb").read()).hexdigest()
+            with open(path, "rb") as f:
+                result[name] = hashlib.sha256(f.read()).hexdigest()
     return result
 
 

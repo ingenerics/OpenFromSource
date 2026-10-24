@@ -604,7 +604,9 @@ class TestRetryLayer(unittest.TestCase):
         finally:
             server.shutdown()
             thread.join()
+            server.server_close()
         self.assertIn("package_mgmt/", captured["ua"])
+        self.assertIn("OpenFromSource offline cache builder", captured["ua"])
         self.assertIn("OpenFromSource offline cache builder", captured["ua"])
 
 
@@ -1581,6 +1583,7 @@ class TestPooledOpener(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.thread.join()
+        self.server.server_close()
 
     def test_reuses_one_connection_across_files(self):
         opener = _PooledOpener()
@@ -1686,6 +1689,7 @@ class TestStatusHistogram(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.thread.join()
+        self.server.server_close()
 
     def test_success_and_error_statuses_are_counted(self):
         opener = _PooledOpener()
