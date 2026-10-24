@@ -12,24 +12,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system deps (python 3.13, venv, gpg/gpgv, apt build tools)
+      - name: Install system deps (python 3.13, venv, gpg/gpgv, build tools)
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
             python3 python3-pip python3-venv python3-setuptools \
-            gnupg dpkg-dev binutils git gcc
+            gnupg dpkg-dev binutils git build-essential
 
-      - name: Create venv and install project
+      - name: Create venv and non-root test user
         run: |
           python3 -m venv /opt/venv
           /opt/venv/bin/pip install --upgrade pip
           /opt/venv/bin/pip install -e ".[dev]"
+          useradd -m runner
+          chown -R runner:runner /opt/venv
+          chown -R runner:runner "$GITHUB_WORKSPACE"
 
       - name: Run test suite (pytest)
-        run: /opt/venv/bin/python -m pytest tests/ -v
+        run: >-
+          su -s /bin/bash runner -c
+          'cd "$GITHUB_WORKSPACE" && /opt/venv/bin/python -m pytest tests/ -v'
 
       - name: Run test suite (unittest)
-        run: /opt/venv/bin/python -m unittest discover -s tests
+        run: >-
+          su -s /bin/bash runner -c
+          'cd "$GITHUB_WORKSPACE" && /opt/venv/bin/python -m unittest discover -s tests'
 
   lint:
     runs-on: ubuntu-latest
