@@ -7,7 +7,8 @@ under `{binary_cache}/handoff/` (data-model.md): per-release filtered
 `Packages.gz` (exactly the verified set whose pool files exist), one
 `Release` with checksums and its armored detached signature `Release.gpg` per
 release (Constitution gate; see research Decision 2 for the `file://` trust
-model), the armored public key, the operator's `bootstrap.sh` (one source
+model), the public key as a binary keyring `offline-cache.gpg` (readable by
+both gpgv and sqv apt backends), the operator's `bootstrap.sh` (one source
 line per release), and the `pool -> ../pool` symlink. The cache's own `dists/`
 archive indexes are never touched (spec 010/011 index-read design).
 
@@ -1147,7 +1148,7 @@ def _write_key_and_signatures(config, releases: list[str]) -> None:
     _run_gpg_to(
         gnupg_home,
         handoff_key_path(config.binary_cache),
-        "--armor", "--export", GPG_KEY_UID,
+        "--export", GPG_KEY_UID,
     )
     for release in releases:
         release_path = os.path.join(handoff_release_dir(config.binary_cache, release), "Release")
@@ -1462,7 +1463,7 @@ def generate_diff(config, conn: sqlite3.Connection, system_bit: int) -> DiffStat
     _run_gpg_to(
         gnupg_home,
         diff_key_path(config.binary_cache),
-        "--armor", "--export", GPG_KEY_UID,
+        "--export", GPG_KEY_UID,
     )
     for release in releases:
         release_path = os.path.join(diff_release_dir(config.binary_cache, release), "Release")

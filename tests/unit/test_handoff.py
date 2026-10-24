@@ -78,25 +78,17 @@ def _main_only_config(base_dir: str, mirror: str = "http://mirror.invalid") -> P
 
 def _gpgv_verify(handoff: str, release: str) -> bool:
     """True when the handoff's Release.gpg verifies against its public key."""
-    # gpgv requires a binary keyring; dearmor the shipped armored key first.
-    with tempfile.TemporaryDirectory() as tmp:
-        keyring = os.path.join(tmp, "keyring.gpg")
-        subprocess.run(
-            ["gpg", "--dearmor", "--output", keyring,
-             os.path.join(handoff, "offline-cache.gpg")],
-            check=True, capture_output=True, text=True,
-        )
-        result = subprocess.run(
-            [
-                "gpgv",
-                "--keyring", keyring,
-                os.path.join(handoff, "dists", release, "Release.gpg"),
-                os.path.join(handoff, "dists", release, "Release"),
-            ],
-            capture_output=True,
-            text=True,
-        )
-        return result.returncode == 0
+    result = subprocess.run(
+        [
+            "gpgv",
+            "--keyring", os.path.join(handoff, "offline-cache.gpg"),
+            os.path.join(handoff, "dists", release, "Release.gpg"),
+            os.path.join(handoff, "dists", release, "Release"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
 
 
 def _read_packages(handoff: str, release: str, component: str) -> str:
@@ -258,11 +250,20 @@ class TestHandoffGenerator(unittest.TestCase):
         self.assertTrue(_gpgv_verify(self.handoff, "trixie"),
                         "Release.gpg must be a valid detached signature of Release")
 
-    def test_key_is_armored_public_key(self):
+    def test_key_is_binary_keyring(self):
+        """offline-cache.gpg must be a binary keyring: apt's gpgv backend
+        (Ubuntu, pre-trixie Debian) cannot load an armored key via --keyring
+        and fails with NO_PUBKEY; sqv (trixie) and gpgv both accept binary."""
         self._generate()
-        with open(handoff_key_path(self.config.binary_cache)) as f:
+        key_path = handoff_key_path(self.config.binary_cache)
+        with open(key_path, "rb") as f:
             key = f.read()
-        self.assertTrue(key.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
+        self.assertFalse(key.startswith(b"-----BEGIN PGP PUBLIC KEY BLOCK-----"))
+        result = subprocess.run(
+            ["gpg", "--list-packets", key_path], capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(":public key packet:", result.stdout)
 
     def test_pool_symlink_resolves_to_cache_pool(self):
         self._generate()
