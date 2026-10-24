@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$pyclass
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.eggs/
+parts/
+develop-eggs/
+instances/
+*.manifest
+*.spec
+.hypothesis/
+.coverage
+htmlcov/
+.tox/
+nox_invocation_log.txt
+.pybuild/
+dev/lib/
+dev/.deps-stamp
+.venv/
+venv/
+.env*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Debian packaging
+debian/**/
+**/debian/**/
+build-stamp*
+config.log
+config.sub
+install-sh
+missing
+mkinstalldirs
+Makefile.in
+*.deb
+*.dsc
+*.diff.gz
+*.orig.tar.*
+*.changes
+*.tar.*
+build-deps-stamp
+**/build-stamp
+**/config.log
+pybuild/**
+**/pybuild/**
+debian/rules generated files (auto-generated subdirs)
+*.po/*.mo
+
+# dpkg-buildpackage outputs
+*.build
+*.buildinfo
+*.upload
+changes/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Miscellaneous
+*.log
+*.bak
+*.swp
+*~
+
+# Project-specific
+project.local.toml
+repos/
+staging/
+tutorials/
+
+# Python - leaked objects
+<sqlite3.Connection object at*

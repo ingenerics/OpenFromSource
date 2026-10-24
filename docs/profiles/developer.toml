@@ -1,0 +1,53 @@
+# OpenFromSource project setting preset: developer
+#
+# Intended use: developers who want to rebuild the packages they care about.
+# The full runtime binary closure is resolved (everything stays installable),
+# and sources + build tools are fetched for the requested set and its
+# dependencies up to `max_source_dep_depth` levels — every fetched source is
+# buildable (its build tools are present).
+#
+# Why the runtime closure is never capped: truncating it would break offline
+# installability and let versions drift out of alignment as the archive evolves
+# (Constitution II). Only source/build-tool support is bounded by the depth.
+#
+# Usage: copy this file over `project.defaults.toml` (or merge its [fetch] and
+# [resolution] sections into `project.local.toml`). The `project.local.toml`
+# overlay still applies on top of the profile.
+#
+# Grow-deeper direction: regular_user -> developer (depth 1) -> developer
+# (depth N). Increasing the depth grows the cache; sources already fetched
+# under a wider depth are retained, never pruned.
+#
+# Not likely to use `ensure-base`.
+
+[paths]
+base_dir = "/var/cache/package_mgmt"
+binary_cache = "{base_dir}/binary"
+source_cache = "{base_dir}/source"
+iso_dir = "{base_dir}/iso"
+
+[database]
+path = "{base_dir}/package_mgmt.db"
+
+[logging]
+level = "INFO"
+directory = "{base_dir}/logs"
+
+[[archive.source]]
+mirror = "http://deb.debian.org/debian"
+release = "trixie"
+components = ["main", "contrib", "non-free"]
+
+[fetch]
+# developer: fetch sources (and their build tools) for the in-depth set.
+source = true
+
+[resolution]
+# Depth convention: -1 = unlimited, 0 = none, positive N = up to N levels.
+# 1 = the requested packages (level 0) and their direct runtime dependencies
+# (level 1). A finite depth keeps the cache small while the requested set and
+# its shallow neighborhood remain rebuildable.
+max_source_dep_depth = 1
+# How many levels of build-tool recursion `verify` reports.
+# -1 = report all levels, 0 = none, positive N = up to N levels.
+max_build_dep_report_depth = 2

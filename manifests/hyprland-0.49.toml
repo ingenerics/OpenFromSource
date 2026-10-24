@@ -1,0 +1,99 @@
+era = "0.49"
+chosen = "2026-10-20"
+reason = "Newest build-verified era: manually pinned at 0.49 — eras 0.50–0.52 pass the declared-dependency gate but fail at compile time with the frozen toolchain (gcc-14, xkbcommon 1.7)."
+
+[[repo]]
+name = "Hyprland"
+url = "https://github.com/hyprwm/Hyprland"
+tag = "v0.49.0"
+commit = "9958d297641b5c84dcff93f9039d80a5ad37ab00"
+build = "meson"
+reason = "v0.49.0 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "aquamarine"
+url = "https://github.com/hyprwm/aquamarine"
+tag = "v0.8.0"
+commit = "1c8fa0bf04d706698311cf595e80bbd6d3697956"
+build = "cmake"
+reason = "v0.8.0 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprcursor"
+url = "https://github.com/hyprwm/hyprcursor"
+tag = "v0.1.12"
+commit = "028bedbc63bf87937ce8f61f2a125fcc4929a98a"
+build = "cmake"
+reason = "v0.1.12 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprgraphics"
+url = "https://github.com/hyprwm/hyprgraphics"
+tag = "v0.1.3"
+commit = "9d7f2687c84c729afbc3b13f7937655570f2978d"
+build = "cmake"
+reason = "v0.1.3 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hypridle"
+url = "https://github.com/hyprwm/hypridle"
+tag = "v0.1.6"
+commit = "84f9f2e127dba49c9bffe293f46bed400e0034a0"
+build = "cmake"
+reason = "v0.1.6 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprland-protocols"
+url = "https://github.com/hyprwm/hyprland-protocols"
+tag = "v0.6.4"
+commit = "3a5c2bda1c1a4e55cc1330c782547695a93f05b2"
+build = "meson"
+reason = "v0.6.4 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprlang"
+url = "https://github.com/hyprwm/hyprlang"
+tag = "v0.6.3"
+commit = "557241780c179cf7ef224df392f8e67dab6cef83"
+build = "cmake"
+reason = "v0.6.3 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprlock"
+url = "https://github.com/hyprwm/hyprlock"
+tag = "v0.8.2"
+commit = "6c64630df81b52208b210f02476f55e4db56e6cf"
+build = "cmake"
+reason = "v0.8.2 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprpaper"
+url = "https://github.com/hyprwm/hyprpaper"
+tag = "v0.7.5"
+commit = "753ffa7fe9b6211609c263e38e09ae663a762b56"
+build = "cmake"
+reason = "v0.7.5 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprutils"
+url = "https://github.com/hyprwm/hyprutils"
+tag = "v0.7.1"
+commit = "674ea57373f08b7609ce93baff131117a0dfe70d"
+build = "cmake"
+reason = "v0.7.1 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "hyprwayland-scanner"
+url = "https://github.com/hyprwm/hyprwayland-scanner"
+tag = "v0.4.4"
+commit = "de913476b59ee88685fdc018e77b8f6637a2ae0b"
+build = "cmake"
+reason = "v0.4.4 aligns with the frozen trixie tree"
+
+[[repo]]
+name = "xdg-desktop-portal-hyprland"
+url = "https://github.com/hyprwm/xdg-desktop-portal-hyprland"
+tag = "v1.3.9"
+commit = "fa50ab342b29f0981eab8c1ba57648d8c9d8c85c"
+build = "meson"
+reason = "v1.3.9 aligns with the frozen trixie tree"

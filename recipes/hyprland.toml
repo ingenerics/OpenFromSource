@@ -1,0 +1,221 @@
+# Declarative recipe for the Hyprland source-built stack.
+#
+# The generic `package-stack` command consumes this file as its entire
+# per-stack knowledge: component list, metadata, and build-system choice.
+# `source_tree` paths are relative to `repo_dir` (default `repos/`).
+#
+# All 13 build components of docs/005-hyprland-source-stack.md (section 2.2):
+# the 12 hyprwm repositories pinned at the aligned era (manifests/hyprland-0.49.toml)
+# plus the source-built D-Bus binding `sdbus-c++` 2.0.0, vendored at the
+# portal subproject `subprojects/sdbus-cpp`. `explicit_depends` declares the
+# runtime requirements on other source-built components (their runtime
+# libraries are not registered in the host dpkg database, so `dpkg-shlibdeps`
+# reports them as un-attributable and the recipe must declare them — they also
+# drive the dependencies-before-dependents import order).
+
+[stack]
+name = "hyprland"
+repo_dir = "repos"
+source_epoch = "2026-10-20"
+
+# 1. Protocol headers (data-only; `Architecture: all`).
+[[component]]
+name = "hyprland-protocols"
+binary_package = "hyprland-protocols"
+source_tree = "hyprland-protocols"
+version = "0.6.4"
+revision = 1
+build_system = "meson"
+architecture = "all"
+description = "Hyprland Wayland protocol headers and XML"
+section = "libdevel"
+homepage = "https://github.com/hyprwm/hyprland-protocols"
+
+# 2. Build-time code generator.
+[[component]]
+name = "hyprwayland-scanner"
+binary_package = "hyprwayland-scanner"
+source_tree = "hyprwayland-scanner"
+version = "0.4.4"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland Wayland protocol code generator"
+section = "devel"
+homepage = "https://github.com/hyprwm/hyprwayland-scanner"
+
+# 3. Core utilities (base of the runtime library chain).
+[[component]]
+name = "hyprutils"
+binary_package = "libhyprutils"
+source_tree = "hyprutils"
+version = "0.7.1"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Core Hyprland utilities library"
+section = "libs"
+homepage = "https://github.com/hyprwm/hyprutils"
+
+# 4. Configuration language library (links libhyprutils).
+[[component]]
+name = "hyprlang"
+binary_package = "libhyprlang"
+source_tree = "hyprlang"
+version = "0.6.3"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland configuration language library"
+section = "libs"
+homepage = "https://github.com/hyprwm/hyprlang"
+explicit_depends = ["libhyprutils (>= 0.7.1)"]
+
+# 5. Image/shared rendering helpers (links libhyprutils).
+[[component]]
+name = "hyprgraphics"
+binary_package = "libhyprgraphics"
+source_tree = "hyprgraphics"
+version = "0.1.3"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland image and shared rendering helpers"
+section = "libs"
+homepage = "https://github.com/hyprwm/hyprgraphics"
+explicit_depends = ["libhyprutils (>= 0.7.1)"]
+
+# 6. Rendering/backend abstraction (links libhyprutils).
+[[component]]
+name = "aquamarine"
+binary_package = "libaquamarine"
+source_tree = "aquamarine"
+version = "0.8.0"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland rendering and backend abstraction library"
+section = "libs"
+homepage = "https://github.com/hyprwm/aquamarine"
+explicit_depends = ["libhyprutils (>= 0.7.1)"]
+
+# 7. Cursor themes (links libhyprlang).
+[[component]]
+name = "hyprcursor"
+binary_package = "libhyprcursor"
+source_tree = "hyprcursor"
+version = "0.1.12"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland cursor theme library"
+section = "libs"
+homepage = "https://github.com/hyprwm/hyprcursor"
+explicit_depends = ["libhyprlang (>= 0.6.3)"]
+
+# 8. The compositor (links every companion runtime library).
+[[component]]
+name = "Hyprland"
+binary_package = "hyprland"
+source_tree = "Hyprland"
+version = "0.49.0"
+revision = 1
+build_system = "meson"
+architecture = "amd64"
+description = "Dynamic tiling Wayland compositor"
+section = "x11"
+homepage = "https://github.com/hyprwm/Hyprland"
+explicit_depends = [
+    "libaquamarine (>= 0.8.0)",
+    "libhyprcursor (>= 0.1.12)",
+    "libhyprgraphics (>= 0.1.3)",
+    "libhyprlang (>= 0.6.3)",
+    "libhyprutils (>= 0.7.1)",
+]
+
+# 9. Source-built D-Bus binding (the one source-built dependency, 2.0.0),
+#    vendored at the portal subproject. Ships `libsdbus-c++`.
+[[component]]
+name = "sdbus-c++"
+binary_package = "libsdbus-c++"
+source_tree = "xdg-desktop-portal-hyprland/subprojects/sdbus-cpp"
+version = "2.0.0"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "High-level C++ D-Bus library (source-built dependency)"
+section = "libs"
+homepage = "https://github.com/Kistler-Group/sdbus-cpp"
+
+# 10. Idle daemon (links libsdbus-c++, libhyprlang, libhyprutils).
+[[component]]
+name = "hypridle"
+binary_package = "hypridle"
+source_tree = "hypridle"
+version = "0.1.6"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland idle daemon"
+section = "x11"
+homepage = "https://github.com/hyprwm/hypridle"
+explicit_depends = [
+    "libsdbus-c++ (>= 2.0.0)",
+    "libhyprlang (>= 0.6.3)",
+    "libhyprutils (>= 0.7.1)",
+]
+
+# 11. Screen locker (links libsdbus-c++, libhyprgraphics, libhyprlang, libhyprutils).
+[[component]]
+name = "hyprlock"
+binary_package = "hyprlock"
+source_tree = "hyprlock"
+version = "0.8.2"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland screen locker"
+section = "x11"
+homepage = "https://github.com/hyprwm/hyprlock"
+explicit_depends = [
+    "libsdbus-c++ (>= 2.0.0)",
+    "libhyprgraphics (>= 0.1.3)",
+    "libhyprlang (>= 0.6.3)",
+    "libhyprutils (>= 0.7.1)",
+]
+
+# 12. Wallpaper daemon (links libhyprgraphics, libhyprlang, libhyprutils).
+[[component]]
+name = "hyprpaper"
+binary_package = "hyprpaper"
+source_tree = "hyprpaper"
+version = "0.7.5"
+revision = 1
+build_system = "cmake"
+architecture = "amd64"
+description = "Hyprland wallpaper daemon"
+section = "x11"
+homepage = "https://github.com/hyprwm/hyprpaper"
+explicit_depends = [
+    "libhyprgraphics (>= 0.1.3)",
+    "libhyprlang (>= 0.6.3)",
+    "libhyprutils (>= 0.7.1)",
+]
+
+# 13. Desktop portal (links libsdbus-c++, libhyprlang, libhyprutils).
+[[component]]
+name = "xdg-desktop-portal-hyprland"
+binary_package = "xdg-desktop-portal-hyprland"
+source_tree = "xdg-desktop-portal-hyprland"
+version = "1.3.9"
+revision = 1
+build_system = "meson"
+architecture = "amd64"
+description = "Hyprland desktop portal backend"
+section = "x11"
+homepage = "https://github.com/hyprwm/xdg-desktop-portal-hyprland"
+explicit_depends = [
+    "libsdbus-c++ (>= 2.0.0)",
+    "libhyprlang (>= 0.6.3)",
+    "libhyprutils (>= 0.7.1)",
+]

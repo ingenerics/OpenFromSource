@@ -1,0 +1,35 @@
+[paths]
+base_dir = "/var/cache/package_mgmt"
+binary_cache = "{base_dir}/binary"
+source_cache = "{base_dir}/source"
+iso_dir = "{base_dir}/iso"
+
+[database]
+path = "{base_dir}/package_mgmt.db"
+
+[logging]
+level = "INFO"
+directory = "{base_dir}/logs"
+
+[[archive.source]]
+mirror = "https://deb.debian.org/debian"
+release = "trixie"
+components = ["main"]
+
+[fetch]
+# Regular_user presets: binaries only (full runtime closure, no sources).
+source = false
+
+[metadata]
+# Admin contact used as the default package Maintainer (e.g. for
+# `package-stack` generated artifacts when a recipe omits `maintainer`).
+admin_email = "noreply@example.com"
+
+[resolution]
+# Depth convention (both depth settings): -1 = unlimited, 0 = none,
+# positive N = up to N levels.
+# Regular_user presets: max_source_dep_depth = 0 (no sources fetched).
+max_source_dep_depth = 0
+# How many levels of build-tool recursion `verify` reports.
+# -1 = report all levels, 0 = none, positive N = up to N levels.
+max_build_dep_report_depth = 2

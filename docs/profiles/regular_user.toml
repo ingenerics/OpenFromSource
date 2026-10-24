@@ -1,0 +1,52 @@
+# OpenFromSource project setting preset: regular_user
+#
+# Intended use: end users who only install binaries from the cache. Only the
+# requested binary packages are resolved, together with their full runtime
+# dependency closure, so everything stays installable — no source packages and
+# no build tools are fetched, keeping the cache small.
+#
+# Why the runtime closure is never capped: truncating it would break offline
+# installability and let versions drift out of alignment as the archive evolves
+# (Constitution II). Only source/build-tool support is bounded by the depth.
+#
+# Usage: copy this file over `project.defaults.toml` (or merge its [fetch] and
+# [resolution] sections into `project.local.toml`). The `project.local.toml`
+# overlay still applies on top of the profile.
+#
+# Grow-deeper direction: regular_user -> developer (finite depth); deepening
+# developer depth grows the cache. No constraint enforces the order; sources
+# already fetched under a wider depth are retained when a shallower depth is
+# configured.
+#
+# Not likely to use `ensure-base` (a full base set is a graybeard concern).
+
+[paths]
+base_dir = "/var/cache/package_mgmt"
+binary_cache = "{base_dir}/binary"
+source_cache = "{base_dir}/source"
+iso_dir = "{base_dir}/iso"
+
+[database]
+path = "{base_dir}/package_mgmt.db"
+
+[logging]
+level = "INFO"
+directory = "{base_dir}/logs"
+
+[[archive.source]]
+mirror = "http://deb.debian.org/debian"
+release = "trixie"
+components = ["main", "contrib", "non-free"]
+
+[fetch]
+# regular_user: binaries only — no source packages.
+source = false
+
+[resolution]
+# Depth convention: -1 = unlimited, 0 = none, positive N = up to N levels.
+# regular_user fetches no sources, so the depth is moot; 0 is set explicitly
+# to showcase the setting alongside source = false.
+max_source_dep_depth = 0
+# How many levels of build-tool recursion `verify` reports.
+# -1 = report all levels, 0 = none, positive N = up to N levels.
+max_build_dep_report_depth = 2

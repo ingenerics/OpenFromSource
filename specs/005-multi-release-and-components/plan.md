@@ -1,0 +1,97 @@
+# Implementation Plan: Multi-Release and Multi-Component Support
+
+**Branch**: `005-multi-release-and-components` | **Spec**: [spec.md](spec.md)
+
+**Input**: Feature specification from `specs/005-multi-release-and-components/spec.md`
+
+## Summary
+
+Extend the project configuration, database schema, cache directory layout, index loading, and dependency resolver to support multiple Debian archive sources (suites and components). The cache directory hierarchy mirrors a standard Debian apt repository exactly: `dists/{release}/{component}/binary-{arch}/Packages.gz` for metadata, `pool/{component}/{prefix}/{package}_{version}_{arch}.deb` for binaries. Configuration changes from a single scalar release/component to an array of `[[archive.source]]` entries. The `binaries` table gains `release`, `component`, and `status` columns for provenance tracking and append-only resolution history. The `sources` table gains `release` and `component` columns. The `add` command defaults to the first configured source, with a `--source <release>` flag to override. No schema version bump during development.
+
+## Technical Context
+
+**Language/Version**: Python 3.13.x (Debian Trixie LTS default), Debian packaging tools (dpkg-dev, debhelper, fakeroot)
+
+**Database**: SQLite 3.x — schema version 1 (no bump during development). The `binaries` and `sources` tables gain `release`, `component` columns. `binaries` gains a `status` column (`'current'` / `'superseded'`). The `binary_to_source` and `source_build_deps` link tables remain unchanged. The `packages` table remains unchanged.
+
+**Primary Dependencies**: python-debian (deb822), sqlite3 (stdlib), tomllib (stdlib for config)
+
+**Cache Layout**: Binary cache follows Debian apt layout: `dists/{release}/{component}/binary-{arch}/Packages.gz`, shared `pool/{component}/{prefix}/{package}_{version}_{arch}.deb`. Source cache mirrors the dists/ structure for Sources.gz and uses the same pool/ tree.
+
+**Testing**: pytest for existing unit/integration tests; no new test framework introduced.
+
+**Target Platform**: Debian Trixie LTS amd64 / x86_64
+
+**Project Type**: CLI tool for offline Debian LTS package management — admin builds cache on networked system, operator consumes on offline system
+
+**Performance Goals**: No new performance requirements beyond existing constitution targets (5s resolution for 10K+ indices)
+
+**Constraints**: Fully offline runtime after cache handoff; Debian apt repository layout compatibility; no schema version bump during development; no backward compatibility for config format
+
+**Scale/Scope**: 68K+ binary packages across multiple suites; pool directory shared across all releases; binaries table tracks version history via status flag
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+| Principle | Check | Notes |
+|-----------|-------|-------|
+| I. Offline-First | ✅ Compliant | Cache is built once (init), used offline. All metadata is local. |
+| II. Dependency Alignment | ✅ Compliant | Resolver uses local indexes; status tracking ensures coherent tree |
+| III. Binary-Source Consistency | ✅ Compliant | Sources gain release/component columns; binary_to_source links unchanged |
+| IV. Minimal Local Cache | ✅ Compliant | Only resolved packages (status='current') are the canonical tree |
+| V. Debian Policy Compliance | ✅ Compliant | Pool layout and package naming follow Debian conventions exactly |
+| VI. Code Quality & Type Safety | ⚠️ Needs Review | New dataclasses (ArchiveSource) must be frozen; existing pattern followed |
+| VII. Database-First Resolution | ✅ Compliant | Sources table populated before downloads; provides table removed from scope |
+| VIII. Documentation & Infrastructure | ✅ Compliant | Spec, data-model, contracts, plan all part of this cycle |
+| IX. Incremental Spec Scope | ✅ Compliant | 5 user stories, 12 FRs, 4 SCs — within 10-story/20-FR limit |
+
+**Gate**: PASS — no violations that require justification. Code quality type annotations will be enforced during implementation review.
+
+## Roles Check
+
+- [x] Commands are assigned to the correct persona (admin-only vs operator-only vs shared)
+- [x] No persona-dependent behavior leaks across the offline/online boundary
+- [x] Cache handoff expectations are reflected in the architecture
+- [x] No new personas introduced by this feature
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/005-multi-release-and-components/
+├── plan.md              # This file
+├── spec.md              # Feature specification
+├── research.md          # Design decisions (pool layout, status flag, config format)
+├── data-model.md        # Entity definitions, schema DDL, state transitions
+├── quickstart.md        # Validation guide and examples
+├── contracts/           # CLI contract definitions
+│   └── cli.md
+├── checklists/          # Quality checklists
+│   └── requirements.md
+└── tasks.md             # Generated by /speckit.tasks
+```
+
+### Source Code (files to change)
+
+```text
+src/package_mgmt/
+├── lib/
+│   ├── model/
+│   │   ├── config.py         # +ArchiveSource dataclass; ProjectConfig.sources
+│   │   ├── database.py       # Updated DDL (release, component, status columns)
+│   │   └── package.py        # +release, +component fields on BinaryPackage, SourcePackage
+│   └── service/
+│       ├── config_loader.py  # Parse [[archive.source]] TOML array
+│       └── index_loader.py   # Accept release/component params, tag stanzas
+├── cli/
+│   └── commands/
+│       └── init.py           # Iterate over sources, per-source dists/ creation
+```
+
+**Structure Decision**: All changes are additive or modifying in existing files. No new source files needed. The config model, database schema, and index loader are the three foundational change points; the init command and config loader are downstream consumers.
+
+## Complexity Tracking
+
+> No constitution violations — this section is intentionally left blank.

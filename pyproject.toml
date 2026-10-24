@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "package_mgmt"
+version = "0.1.0-alpha"
+description = "OpenFromSource package management CLI tool"
+requires-python = ">=3.11"
+# pycdlib is imported at module top by the ISO reader (ensure-base chain), so
+# a standard install without extras must carry it as a runtime dependency.
+dependencies = ["python-debian", "pycdlib"]
+
+[project.optional-dependencies]
+# ruff pinned <0.12: newer releases promote preview rules to defaults and
+# flag the codebase wholesale (verified clean on 0.11.x).
+dev = ["pytest>=8", "ruff>=0.9,<0.12"]
+
+[project.scripts]
+package_mgmt = "package_mgmt.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+package_mgmt = ["data/*.gpg"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# Long lines are intentional in SQL strings and test config literals.
+ignore = ["E501"]

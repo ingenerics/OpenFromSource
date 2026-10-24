@@ -1,0 +1,56 @@
+# OpenFromSource project setting preset: graybeard
+#
+# Intended use: full rebuild capability — "turtles all the way down". Every
+# binary in scope is resolved recursively with its source and its build tools
+# (Constitution III), so the whole stack can be rebuilt from source. This is
+# the intended `ensure-base` configuration.
+#
+# Why the runtime closure is never capped: truncating it would break offline
+# installability and let versions drift out of alignment as the archive evolves
+# (Constitution II). Only source/build-tool support is bounded by the depth.
+#
+# Usage: copy this file over `project.defaults.toml` (or merge its [fetch] and
+# [resolution] sections into `project.local.toml`). The `project.local.toml`
+# overlay still applies on top of the profile.
+#
+# Scale: full recursion can be large — adding a couple of packages can resolve
+# well over 13 700 binaries, 25 000 sources and 30 GB after download. Use the
+# developer profile when a small, source-ready cache is preferred.
+#
+# Stand-alone, fresh-cache-only profile: run graybeard from the get-go. It is
+# not part of a grow-deeper chain — the supported direction is
+# regular_user -> developer (including deepening developer depth); reusing a
+# cache grown under a shallower profile is not supported, matching
+# `ensure-base`'s refusal to run on a non-empty cache. Sources already fetched
+# are retained, never pruned, when a shallower depth is configured.
+
+[paths]
+base_dir = "/var/cache/package_mgmt"
+binary_cache = "{base_dir}/binary"
+source_cache = "{base_dir}/source"
+iso_dir = "{base_dir}/iso"
+
+[database]
+path = "{base_dir}/package_mgmt.db"
+
+[logging]
+level = "INFO"
+directory = "{base_dir}/logs"
+
+[[archive.source]]
+mirror = "http://deb.debian.org/debian"
+release = "trixie"
+components = ["main", "contrib", "non-free", "non-free-firmware"]
+
+[fetch]
+# graybeard: fetch everything — sources and build tools for every binary.
+source = true
+
+[resolution]
+# Depth convention: -1 = unlimited, 0 = none, positive N = up to N levels.
+# -1 (unlimited) = full recursion — every binary gets its source and build
+# tools.
+max_source_dep_depth = -1
+# How many levels of build-tool recursion `verify` reports.
+# -1 = report all levels, 0 = none, positive N = up to N levels.
+max_build_dep_report_depth = 2
